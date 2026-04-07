@@ -29,10 +29,10 @@ final class RecordingViewModel {
             return "Saving highlight..."
         }
         if isBufferFull {
-            return "30s ready to export"
+            return "Last 30s ready to export"
         }
         if bufferSeconds > 0 {
-            return "\(bufferSeconds)s ready to export"
+            return "Last \(bufferSeconds)s ready to export"
         }
         return "Starting..."
     }

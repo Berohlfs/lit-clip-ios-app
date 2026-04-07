@@ -6,18 +6,10 @@ enum ExportOrientation {
     case portrait
     case landscape
 
-    func renderSize(sourceWidth: CGFloat, sourceHeight: CGFloat) -> CGSize {
-        switch self {
-        case .portrait: return CGSize(width: sourceHeight, height: sourceWidth)
-        case .landscape: return CGSize(width: sourceWidth, height: sourceHeight)
-        }
-    }
-
-    func transform(sourceWidth: CGFloat, sourceHeight: CGFloat) -> CGAffineTransform {
+    func preferredTransform(sourceWidth: CGFloat, sourceHeight: CGFloat) -> CGAffineTransform {
         switch self {
         case .portrait:
-            // 90° clockwise: (x,y) → (sourceHeight - y, x)
-            // Matrix: a=0, b=1, c=-1, d=0, tx=sourceHeight, ty=0
+            // Metadata rotation: tells player to rotate 90° CW for display
             return CGAffineTransform(a: 0, b: 1, c: -1, d: 0, tx: sourceHeight, ty: 0)
         case .landscape:
             return .identity
@@ -45,6 +37,9 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
     private var sessionStartTime: Date?
     private var hasStartedSession = false
     private var videoFormatDescription: CMFormatDescription?
+
+    // Protects segments from pruning during export
+    private var isSaving = false
 
     init(bufferDuration: TimeInterval = 30.0) {
         self.bufferDuration = bufferDuration
@@ -126,124 +121,80 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
     }
 
     func saveBuffer(orientation: ExportOrientation) async throws -> URL {
-        // Copy segment files to staging so the rolling buffer isn't affected
-        let stagedFiles: [URL] = try writerQueue.sync {
+        // Snapshot segment URLs directly — no copy. Flag protects from pruning.
+        let segmentURLs: [URL] = writerQueue.sync {
             finishCurrentSegment()
-
+            isSaving = true
             lock.lock()
-            let currentSegments = segments
+            let urls = segments.map(\.url)
             lock.unlock()
-
-            let stagingDir = FileManager.default.temporaryDirectory
-                .appendingPathComponent("HighLitStaging_\(UUID().uuidString)", isDirectory: true)
-            try FileManager.default.createDirectory(at: stagingDir, withIntermediateDirectories: true)
-
-            var copies: [URL] = []
-            for (i, segment) in currentSegments.enumerated() {
-                let dest = stagingDir.appendingPathComponent("seg_\(i).mp4")
-                try FileManager.default.copyItem(at: segment.url, to: dest)
-                copies.append(dest)
-            }
-            return copies
+            return urls
         }
 
-        let stagingDir = stagedFiles.first?.deletingLastPathComponent()
-
-        // Clean up staging on any exit path
-        func cleanupStaging() {
-            if let stagingDir {
-                try? FileManager.default.removeItem(at: stagingDir)
+        // Always unset the saving flag and catch up on pruning when done
+        defer {
+            writerQueue.sync {
+                isSaving = false
+                pruneOldSegments()
             }
         }
 
-        guard !stagedFiles.isEmpty else {
-            cleanupStaging()
+        guard !segmentURLs.isEmpty else {
             throw BufferError.emptyBuffer
         }
 
-        // Compose staged copies into a single output file
+        // Compose segments into a single output
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            cleanupStaging()
             throw BufferError.compositionFailed
         }
         let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
 
         var insertTime = CMTime.zero
 
-        do {
-            for url in stagedFiles {
-                let asset = AVURLAsset(url: url)
-                let duration = try await asset.load(.duration)
-                let videoTracks = try await asset.loadTracks(withMediaType: .video)
-                let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        for url in segmentURLs {
+            let asset = AVURLAsset(url: url)
+            let duration = try await asset.load(.duration)
+            let videoTracks = try await asset.loadTracks(withMediaType: .video)
+            let audioTracks = try await asset.loadTracks(withMediaType: .audio)
 
-                let timeRange = CMTimeRange(start: .zero, duration: duration)
+            let timeRange = CMTimeRange(start: .zero, duration: duration)
 
-                if let assetVideoTrack = videoTracks.first {
-                    try videoTrack.insertTimeRange(timeRange, of: assetVideoTrack, at: insertTime)
-                }
-                if let assetAudioTrack = audioTracks.first, let audioTrack {
-                    try audioTrack.insertTimeRange(timeRange, of: assetAudioTrack, at: insertTime)
-                }
-
-                insertTime = insertTime + duration
+            if let assetVideoTrack = videoTracks.first {
+                try videoTrack.insertTimeRange(timeRange, of: assetVideoTrack, at: insertTime)
             }
-        } catch {
-            cleanupStaging()
-            throw error
+            if let assetAudioTrack = audioTracks.first, let audioTrack {
+                try audioTrack.insertTimeRange(timeRange, of: assetAudioTrack, at: insertTime)
+            }
+
+            insertTime = insertTime + duration
         }
 
-        // Trim to exactly bufferDuration from the end
+        // Apply orientation as metadata — no re-encoding needed
+        let trackSize = try await videoTrack.load(.naturalSize)
+        videoTrack.preferredTransform = orientation.preferredTransform(
+            sourceWidth: trackSize.width,
+            sourceHeight: trackSize.height
+        )
+
+        // Trim to last bufferDuration
         let totalDuration = insertTime
         let maxDuration = CMTimeMakeWithSeconds(bufferDuration, preferredTimescale: 600)
 
         let outputURL = makeClipURL()
 
-        // Read actual source dimensions from the video track
-        let trackSize: CGSize
-        do {
-            trackSize = try await videoTrack.load(.naturalSize)
-        } catch {
-            cleanupStaging()
-            throw error
-        }
-        let sourceWidth = trackSize.width
-        let sourceHeight = trackSize.height
-
-        // Apply orientation transform via video composition
-        let renderSize = orientation.renderSize(sourceWidth: sourceWidth, sourceHeight: sourceHeight)
-
-        let instruction = AVMutableVideoCompositionInstruction()
-        let trimStart = totalDuration > maxDuration ? totalDuration - maxDuration : .zero
-        let trimDuration = totalDuration > maxDuration ? maxDuration : totalDuration
-        instruction.timeRange = CMTimeRange(start: trimStart, duration: trimDuration)
-
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
-        layerInstruction.setTransform(orientation.transform(sourceWidth: sourceWidth, sourceHeight: sourceHeight), at: .zero)
-        instruction.layerInstructions = [layerInstruction]
-
-        let videoComposition = AVMutableVideoComposition()
-        videoComposition.renderSize = renderSize
-        videoComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-        videoComposition.instructions = [instruction]
-
-        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
-            cleanupStaging()
+        guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough) else {
             throw BufferError.exportFailed
         }
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
-        exportSession.videoComposition = videoComposition
 
         if totalDuration > maxDuration {
-            exportSession.timeRange = CMTimeRange(start: trimStart, duration: trimDuration)
+            let trimStart = totalDuration - maxDuration
+            exportSession.timeRange = CMTimeRange(start: trimStart, duration: maxDuration)
         }
 
         await exportSession.export()
-
-        // Always clean up staging
-        cleanupStaging()
 
         if let error = exportSession.error {
             try? FileManager.default.removeItem(at: outputURL)
@@ -266,7 +217,6 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         do {
             let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
 
-            // Write frames at native landscape dimensions — no transform
             var videoSettings: [String: Any] = [
                 AVVideoCodecKey: AVVideoCodecType.h264
             ]
@@ -347,6 +297,7 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
     }
 
     private func pruneOldSegments() {
+        guard !isSaving else { return }
         lock.lock()
         let maxSegments = Int(ceil(bufferDuration / segmentDuration)) + 1
         while segments.count > maxSegments {
