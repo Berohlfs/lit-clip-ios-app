@@ -147,35 +147,51 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
             return copies
         }
 
+        let stagingDir = stagedFiles.first?.deletingLastPathComponent()
+
+        // Clean up staging on any exit path
+        func cleanupStaging() {
+            if let stagingDir {
+                try? FileManager.default.removeItem(at: stagingDir)
+            }
+        }
+
         guard !stagedFiles.isEmpty else {
+            cleanupStaging()
             throw BufferError.emptyBuffer
         }
 
         // Compose staged copies into a single output file
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            cleanupStaging()
             throw BufferError.compositionFailed
         }
         let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
 
         var insertTime = CMTime.zero
 
-        for url in stagedFiles {
-            let asset = AVURLAsset(url: url)
-            let duration = try await asset.load(.duration)
-            let videoTracks = try await asset.loadTracks(withMediaType: .video)
-            let audioTracks = try await asset.loadTracks(withMediaType: .audio)
+        do {
+            for url in stagedFiles {
+                let asset = AVURLAsset(url: url)
+                let duration = try await asset.load(.duration)
+                let videoTracks = try await asset.loadTracks(withMediaType: .video)
+                let audioTracks = try await asset.loadTracks(withMediaType: .audio)
 
-            let timeRange = CMTimeRange(start: .zero, duration: duration)
+                let timeRange = CMTimeRange(start: .zero, duration: duration)
 
-            if let assetVideoTrack = videoTracks.first {
-                try videoTrack.insertTimeRange(timeRange, of: assetVideoTrack, at: insertTime)
+                if let assetVideoTrack = videoTracks.first {
+                    try videoTrack.insertTimeRange(timeRange, of: assetVideoTrack, at: insertTime)
+                }
+                if let assetAudioTrack = audioTracks.first, let audioTrack {
+                    try audioTrack.insertTimeRange(timeRange, of: assetAudioTrack, at: insertTime)
+                }
+
+                insertTime = insertTime + duration
             }
-            if let assetAudioTrack = audioTracks.first, let audioTrack {
-                try audioTrack.insertTimeRange(timeRange, of: assetAudioTrack, at: insertTime)
-            }
-
-            insertTime = insertTime + duration
+        } catch {
+            cleanupStaging()
+            throw error
         }
 
         // Trim to exactly bufferDuration from the end
@@ -185,7 +201,13 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         let outputURL = makeClipURL()
 
         // Read actual source dimensions from the video track
-        let trackSize = try await videoTrack.load(.naturalSize)
+        let trackSize: CGSize
+        do {
+            trackSize = try await videoTrack.load(.naturalSize)
+        } catch {
+            cleanupStaging()
+            throw error
+        }
         let sourceWidth = trackSize.width
         let sourceHeight = trackSize.height
 
@@ -207,6 +229,7 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         videoComposition.instructions = [instruction]
 
         guard let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+            cleanupStaging()
             throw BufferError.exportFailed
         }
         exportSession.outputURL = outputURL
@@ -219,15 +242,15 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
 
         await exportSession.export()
 
-        // Clean up staging directory
-        if let stagingDir = stagedFiles.first?.deletingLastPathComponent() {
-            try? FileManager.default.removeItem(at: stagingDir)
-        }
+        // Always clean up staging
+        cleanupStaging()
 
         if let error = exportSession.error {
+            try? FileManager.default.removeItem(at: outputURL)
             throw error
         }
         guard exportSession.status == .completed else {
+            try? FileManager.default.removeItem(at: outputURL)
             throw BufferError.exportFailed
         }
 

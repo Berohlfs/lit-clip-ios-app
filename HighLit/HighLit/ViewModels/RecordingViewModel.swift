@@ -93,12 +93,15 @@ final class RecordingViewModel {
                 let url = try await bufferManager.saveBuffer(orientation: exportOrientation)
                 let duration = bufferManager.currentDuration
 
-                // Save to Camera Roll
-                try await PHPhotoLibrary.shared().performChanges {
-                    PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                // Save to Camera Roll, then always clean up temp file
+                do {
+                    try await PHPhotoLibrary.shared().performChanges {
+                        PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+                    }
+                } catch {
+                    try? FileManager.default.removeItem(at: url)
+                    throw error
                 }
-
-                // Clean up temp file
                 try? FileManager.default.removeItem(at: url)
 
                 await MainActor.run {
