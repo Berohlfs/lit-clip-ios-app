@@ -256,6 +256,9 @@
 				DEVELOPMENT_TEAM = 26D4VQ556Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "HighLit needs camera access to record sports highlights.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HighLit needs microphone access to capture audio with your highlights.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "HighLit saves your highlights to your Camera Roll.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +291,9 @@
 				DEVELOPMENT_TEAM = 26D4VQ556Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "HighLit needs camera access to record sports highlights.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HighLit needs microphone access to capture audio with your highlights.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "HighLit saves your highlights to your Camera Roll.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
