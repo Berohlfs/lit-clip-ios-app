@@ -58,7 +58,7 @@ final class RecordingViewModel {
                     self.cameraPermissionDenied = true
                     return
                 }
-                self.bufferManager.videoTransform = self.cameraService.videoTransform
+                UIDevice.current.beginGeneratingDeviceOrientationNotifications()
                 self.bufferManager.start()
                 self.cameraService.start()
                 self.state = .recording
@@ -70,6 +70,7 @@ final class RecordingViewModel {
     }
 
     func stopRecording() {
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
         cameraService.stop()
         stopProgressUpdates()
         bufferManager.flush()
@@ -81,11 +82,15 @@ final class RecordingViewModel {
     func saveHighlight() {
         guard isSaveEnabled else { return }
 
+        // Capture orientation at the moment of save
+        let deviceOrientation = UIDevice.current.orientation
+        let exportOrientation: ExportOrientation = deviceOrientation.isLandscape ? .landscape : .portrait
+
         state = .saving
 
         Task {
             do {
-                let url = try await bufferManager.saveBuffer()
+                let url = try await bufferManager.saveBuffer(orientation: exportOrientation)
                 let duration = bufferManager.currentDuration
 
                 // Save to Camera Roll

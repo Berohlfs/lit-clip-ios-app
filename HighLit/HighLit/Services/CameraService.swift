@@ -17,7 +17,6 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
 
     private(set) var videoFormatDescription: CMFormatDescription?
     private(set) var audioFormatDescription: CMFormatDescription?
-    private(set) var videoTransform: CGAffineTransform = .identity
     private var isConfigured = false
 
     func requestAccessAndConfigure(completion: @escaping @Sendable (Bool) -> Void) {
@@ -75,20 +74,11 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
             session.addInput(audioInput)
         }
 
-        // Video output — must discard late frames to prevent pipeline stalls
+        // Video output — no rotation applied, frames arrive in native landscape
         videoOutput.alwaysDiscardsLateVideoFrames = true
         videoOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
         if session.canAddOutput(videoOutput) {
             session.addOutput(videoOutput)
-        }
-
-        // Set video orientation to portrait and capture the transform
-        if let connection = videoOutput.connection(with: .video) {
-            if connection.isVideoRotationAngleSupported(90) {
-                connection.videoRotationAngle = 90
-            }
-            // Portrait rotation: 90 degrees clockwise
-            videoTransform = CGAffineTransform(rotationAngle: .pi / 2)
         }
 
         // Audio output
