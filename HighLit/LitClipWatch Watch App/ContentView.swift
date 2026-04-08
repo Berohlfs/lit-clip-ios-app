@@ -18,20 +18,42 @@ struct ContentView: View {
             }
 
             Button(action: session.sendSave) {
-                VStack(spacing: 4) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 32))
-                    Text("SAVE")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                ZStack {
+                    Circle()
+                        .stroke(.white.opacity(0.12), lineWidth: 3)
+                        .frame(width: 72, height: 72)
+
+                    Circle()
+                        .fill(
+                            session.isReachable
+                                ? AnyShapeStyle(LinearGradient(
+                                    colors: [Color(red: 0.2, green: 0.8, blue: 0.4), Color(red: 0.1, green: 0.6, blue: 0.5)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
+                                : AnyShapeStyle(Color.white.opacity(0.1))
+                        )
+                        .frame(width: 60, height: 60)
+
+                    if session.isSending {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        VStack(spacing: 2) {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+
+                            Text("SAVE")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                    }
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.green)
+            .buttonStyle(.plain)
             .disabled(!session.isReachable || session.isSending)
-
-            if session.isSending {
-                ProgressView()
-            }
+            .opacity(session.isReachable ? 1.0 : 0.5)
 
             if let result = session.lastResult {
                 Image(systemName: result ? "checkmark.circle.fill" : "xmark.circle.fill")
