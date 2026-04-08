@@ -62,17 +62,27 @@ struct RecordingView: View {
     // MARK: - Top Bar
 
     private var topBar: some View {
-        HStack {
-            if viewModel.state == .recording || viewModel.state == .saving {
-                recordingIndicator
-            }
-            Spacer()
-            if viewModel.state == .recording {
-                cameraToggleButton
+        ZStack {
+            // Title — always dead center
+            Text("LITCLIP")
+                .font(.system(size: 22, weight: .black, design: .default))
+                .italic()
+                .tracking(3)
+                .foregroundStyle(.white)
+
+            // REC and camera toggle — independent overlay
+            HStack {
+                if viewModel.state == .recording || viewModel.state == .saving {
+                    recordingIndicator
+                }
+                Spacer()
+                if viewModel.state == .recording {
+                    cameraToggleButton
+                }
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 60)
+        .padding(.top, 20)
     }
 
     private var cameraToggleButton: some View {
