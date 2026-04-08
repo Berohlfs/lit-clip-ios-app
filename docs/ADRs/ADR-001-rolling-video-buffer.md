@@ -3,7 +3,6 @@
 **Status:** Accepted  
 **Date:** 2026-04-07  
 **Authors:** Bernardo Cruz Rohlfs, Claude  
-
 **Claude Code Session**: 35d49b9e-23ba-48ce-9d31-ab2a70edcecb
 
 ## Context
