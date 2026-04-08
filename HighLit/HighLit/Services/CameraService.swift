@@ -18,6 +18,7 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
     private(set) var videoFormatDescription: CMFormatDescription?
     private(set) var audioFormatDescription: CMFormatDescription?
     private var isConfigured = false
+    private var currentPosition: AVCaptureDevice.Position = .back
 
     func requestAccessAndConfigure(completion: @escaping @Sendable (Bool) -> Void) {
         AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
@@ -43,6 +44,35 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
         sessionQueue.async { [weak self] in
             guard let self, self.session.isRunning else { return }
             self.session.stopRunning()
+        }
+    }
+
+    func switchCamera() {
+        sessionQueue.async { [weak self] in
+            guard let self, self.isConfigured else { return }
+
+            let newPosition: AVCaptureDevice.Position = self.currentPosition == .back ? .front : .back
+            guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+                  let newInput = try? AVCaptureDeviceInput(device: newDevice) else { return }
+
+            self.session.beginConfiguration()
+
+            // Remove existing video input
+            if let currentInput = self.session.inputs.first(where: { input in
+                (input as? AVCaptureDeviceInput)?.device.hasMediaType(.video) == true
+            }) {
+                self.session.removeInput(currentInput)
+            }
+
+            if self.session.canAddInput(newInput) {
+                self.session.addInput(newInput)
+                self.currentPosition = newPosition
+            }
+
+            self.session.commitConfiguration()
+
+            // Reset format description so VideoBufferManager picks up new dimensions
+            self.videoFormatDescription = nil
         }
     }
 

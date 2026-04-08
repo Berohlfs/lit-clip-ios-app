@@ -119,6 +119,20 @@ final class RecordingViewModel {
         }
     }
 
+    func toggleCamera() {
+        guard state == .recording else { return }
+        // Full reset: stop capture, wipe buffer, switch lens, restart
+        cameraService.stop()
+        stopProgressUpdates()
+        bufferManager.flush()
+        bufferSeconds = 0
+        isBufferFull = false
+        cameraService.switchCamera()
+        bufferManager.start()
+        cameraService.start()
+        startProgressUpdates()
+    }
+
     func dismissSaveConfirmation() {
         showSaveConfirmation = false
     }

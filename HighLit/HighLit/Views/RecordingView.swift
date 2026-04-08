@@ -67,9 +67,22 @@ struct RecordingView: View {
                 recordingIndicator
             }
             Spacer()
+            if viewModel.state == .recording {
+                cameraToggleButton
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 60)
+    }
+
+    private var cameraToggleButton: some View {
+        Button(action: viewModel.toggleCamera) {
+            Image(systemName: "arrow.triangle.2.circlepath.camera.fill")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(10)
+                .background(.ultraThinMaterial, in: Circle())
+        }
     }
 
     private var recordingIndicator: some View {
