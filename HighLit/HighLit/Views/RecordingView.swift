@@ -31,11 +31,12 @@ struct RecordingView: View {
             }
             .padding(.bottom, 50)
 
-            // Save confirmation toast
-            if viewModel.showSaveConfirmation {
-                saveConfirmationToast
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
+        }
+        .overlay(alignment: .top) {
+            saveConfirmationToast
+                .opacity(viewModel.showSaveConfirmation ? 1 : 0)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.showSaveConfirmation)
+                .allowsHitTesting(viewModel.showSaveConfirmation)
         }
         .onAppear {
             viewModel.startRecording()
@@ -53,8 +54,6 @@ struct RecordingView: View {
                 break
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: viewModel.showSaveConfirmation)
-        .animation(.easeInOut(duration: 0.3), value: viewModel.isSaveEnabled)
         .preferredColorScheme(.dark)
         .statusBarHidden()
     }
@@ -71,15 +70,14 @@ struct RecordingView: View {
                 .foregroundStyle(.white)
 
             // REC and camera toggle — independent overlay
+            let isActive = viewModel.state == .recording || viewModel.state == .saving
             HStack {
-                if viewModel.state == .recording || viewModel.state == .saving {
-                    recordingIndicator
-                }
+                recordingIndicator
                 Spacer()
-                if viewModel.state == .recording {
-                    cameraToggleButton
-                }
+                cameraToggleButton
+                    .allowsHitTesting(viewModel.state == .recording)
             }
+            .opacity(isActive ? 1 : 0)
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
@@ -197,46 +195,43 @@ struct RecordingView: View {
         .disabled(!viewModel.isSaveEnabled || viewModel.state == .saving)
         .scaleEffect(viewModel.isSaveEnabled ? 1.0 : 0.9)
         .opacity(viewModel.isSaveEnabled ? 1.0 : 0.5)
+        .animation(.easeInOut(duration: 0.3), value: viewModel.isSaveEnabled)
     }
 
     // MARK: - Save Confirmation
 
     private var saveConfirmationToast: some View {
-        VStack {
-            HStack(spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.green)
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(.green)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Highlight Saved!")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Highlight Saved!")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
 
-                    if let clip = viewModel.savedClip {
-                        Text("\(Int(clip.duration))s clip saved")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                }
-
-                Spacer()
-
-                Button {
-                    viewModel.dismissSaveConfirmation()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.6))
+                if let clip = viewModel.savedClip {
+                    Text("\(Int(clip.duration))s clip saved")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
             }
-            .padding(16)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .padding(.horizontal, 20)
-            .padding(.top, 60)
 
             Spacer()
+
+            Button {
+                viewModel.dismissSaveConfirmation()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
         }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20)
+        .padding(.top, 90)
     }
 }
 
