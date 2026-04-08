@@ -6,8 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		75A354AB2F868E2D00A3EC08 /* LitClipWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 75A354A12F868E2C00A3EC08 /* LitClipWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		75A354A92F868E2D00A3EC08 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 757921992F857EE700CED01E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 75A354A02F868E2C00A3EC08;
+			remoteInfo = "LitClipWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		75A354AC2F868E2D00A3EC08 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				75A354AB2F868E2D00A3EC08 /* LitClipWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		757921A12F857EE700CED01E /* HighLit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HighLit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		75A354A12F868E2C00A3EC08 /* LitClipWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LitClipWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +45,22 @@
 			path = HighLit;
 			sourceTree = "<group>";
 		};
+		75A354A22F868E2C00A3EC08 /* LitClipWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "LitClipWatch Watch App";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		7579219E2F857EE700CED01E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		75A3549E2F868E2C00A3EC08 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				757921A32F857EE700CED01E /* HighLit */,
+				75A354A22F868E2C00A3EC08 /* LitClipWatch Watch App */,
 				757921A22F857EE700CED01E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				757921A12F857EE700CED01E /* HighLit.app */,
+				75A354A12F868E2C00A3EC08 /* LitClipWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,10 +98,12 @@
 				7579219D2F857EE700CED01E /* Sources */,
 				7579219E2F857EE700CED01E /* Frameworks */,
 				7579219F2F857EE700CED01E /* Resources */,
+				75A354AC2F868E2D00A3EC08 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				75A354AA2F868E2D00A3EC08 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				757921A32F857EE700CED01E /* HighLit */,
@@ -68,6 +113,28 @@
 			);
 			productName = HighLit;
 			productReference = 757921A12F857EE700CED01E /* HighLit.app */;
+			productType = "com.apple.product-type.application";
+		};
+		75A354A02F868E2C00A3EC08 /* LitClipWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 75A354AF2F868E2D00A3EC08 /* Build configuration list for PBXNativeTarget "LitClipWatch Watch App" */;
+			buildPhases = (
+				75A3549D2F868E2C00A3EC08 /* Sources */,
+				75A3549E2F868E2C00A3EC08 /* Frameworks */,
+				75A3549F2F868E2C00A3EC08 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				75A354A22F868E2C00A3EC08 /* LitClipWatch Watch App */,
+			);
+			name = "LitClipWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "LitClipWatch Watch App";
+			productReference = 75A354A12F868E2C00A3EC08 /* LitClipWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -81,6 +148,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					757921A02F857EE700CED01E = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					75A354A02F868E2C00A3EC08 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -100,12 +170,20 @@
 			projectRoot = "";
 			targets = (
 				757921A02F857EE700CED01E /* HighLit */,
+				75A354A02F868E2C00A3EC08 /* LitClipWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		7579219F2F857EE700CED01E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		75A3549F2F868E2C00A3EC08 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +200,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		75A3549D2F868E2C00A3EC08 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		75A354AA2F868E2D00A3EC08 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 75A354A02F868E2C00A3EC08 /* LitClipWatch Watch App */;
+			targetProxy = 75A354A92F868E2D00A3EC08 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		757921AA2F857EE800CED01E /* Debug */ = {
@@ -318,6 +411,72 @@
 			};
 			name = Release;
 		};
+		75A354AD2F868E2D00A3EC08 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 26D4VQ556Z;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LitClipWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "Be--s-Org.HighLit";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Be--s-Org.HighLit.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Debug;
+		};
+		75A354AE2F868E2D00A3EC08 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 26D4VQ556Z;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LitClipWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "Be--s-Org.HighLit";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Be--s-Org.HighLit.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -335,6 +494,15 @@
 			buildConfigurations = (
 				757921AD2F857EE800CED01E /* Debug */,
 				757921AE2F857EE800CED01E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		75A354AF2F868E2D00A3EC08 /* Build configuration list for PBXNativeTarget "LitClipWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				75A354AD2F868E2D00A3EC08 /* Debug */,
+				75A354AE2F868E2D00A3EC08 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
