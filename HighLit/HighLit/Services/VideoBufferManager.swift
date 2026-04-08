@@ -9,7 +9,6 @@ enum ExportOrientation {
     func preferredTransform(sourceWidth: CGFloat, sourceHeight: CGFloat) -> CGAffineTransform {
         switch self {
         case .portrait:
-            // Metadata rotation: tells player to rotate 90° CW for display
             return CGAffineTransform(a: 0, b: 1, c: -1, d: 0, tx: sourceHeight, ty: 0)
         case .landscape:
             return .identity
@@ -21,7 +20,7 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
 
     nonisolated let bufferDuration: TimeInterval
 
-    private let segmentDuration: TimeInterval = 6.0
+    private let segmentDuration: TimeInterval = 60.0
     private let lock = NSLock()
     private let writerQueue = DispatchQueue(label: "com.highlit.buffer.writer")
 
@@ -37,6 +36,10 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
     private var sessionStartTime: Date?
     private var hasStartedSession = false
     private var videoFormatDescription: CMFormatDescription?
+
+    // Old writer finishing asynchronously during rotation
+    private var pendingWriter: AVAssetWriter?
+    private var pendingURL: URL?
 
     // Protects segments from pruning during export
     private var isSaving = false
@@ -79,9 +82,7 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
             if hasStartedSession,
                currentSegmentStartTime.isValid,
                CMTimeGetSeconds(pts - currentSegmentStartTime) >= segmentDuration {
-                finishCurrentSegment()
-                pruneOldSegments()
-                startNewSegment(at: pts)
+                rotateSegment(at: pts)
             }
 
             guard let writer = currentWriter,
@@ -113,7 +114,8 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
 
     func flush() {
         writerQueue.sync {
-            finishCurrentSegment()
+            waitForPendingWriter()
+            finishCurrentSegmentBlocking()
             deleteAllSegmentFiles()
             sessionStartTime = nil
             videoFormatDescription = nil
@@ -121,9 +123,10 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
     }
 
     func saveBuffer(orientation: ExportOrientation) async throws -> URL {
-        // Snapshot segment URLs directly — no copy. Flag protects from pruning.
         let segmentURLs: [URL] = writerQueue.sync {
-            finishCurrentSegment()
+            // Wait for any pending rotation to complete before snapshotting
+            waitForPendingWriter()
+            finishCurrentSegmentBlocking()
             isSaving = true
             lock.lock()
             let urls = segments.map(\.url)
@@ -131,7 +134,6 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
             return urls
         }
 
-        // Always unset the saving flag and catch up on pruning when done
         defer {
             writerQueue.sync {
                 isSaving = false
@@ -170,7 +172,7 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
             insertTime = insertTime + duration
         }
 
-        // Apply orientation as metadata — no re-encoding needed
+        // Apply orientation as metadata
         let trackSize = try await videoTrack.load(.naturalSize)
         videoTrack.preferredTransform = orientation.preferredTransform(
             sourceWidth: trackSize.width,
@@ -208,6 +210,106 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         return outputURL
     }
 
+    // MARK: - Segment Rotation (non-blocking)
+
+    private func rotateSegment(at time: CMTime) {
+        // Wait for any previous pending rotation first
+        waitForPendingWriter()
+
+        // Capture old writer references
+        let oldWriter = currentWriter
+        let oldVideoInput = currentVideoInput
+        let oldAudioInput = currentAudioInput
+        let oldURL = currentSegmentURL
+
+        // Start new writer IMMEDIATELY — no frame gap
+        currentWriter = nil
+        currentVideoInput = nil
+        currentAudioInput = nil
+        currentSegmentURL = nil
+        currentSegmentStartTime = .invalid
+        hasStartedSession = false
+        startNewSegment(at: time)
+
+        // Finish old writer asynchronously
+        guard let oldWriter, let oldURL else { return }
+
+        oldVideoInput?.markAsFinished()
+        oldAudioInput?.markAsFinished()
+
+        pendingWriter = oldWriter
+        pendingURL = oldURL
+
+        oldWriter.finishWriting { [weak self] in
+            self?.writerQueue.async {
+                self?.completePendingWriter()
+            }
+        }
+
+        pruneOldSegments()
+    }
+
+    private func completePendingWriter() {
+        guard let writer = pendingWriter, let url = pendingURL else { return }
+
+        if writer.status == .completed {
+            lock.lock()
+            segments.append(SegmentInfo(url: url, createdAt: Date()))
+            lock.unlock()
+        } else {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        pendingWriter = nil
+        pendingURL = nil
+    }
+
+    private func waitForPendingWriter() {
+        guard pendingWriter != nil else { return }
+
+        // finishWriting was already called during rotation.
+        // Poll until the writer transitions out of .writing state.
+        // This happens on AVAssetWriter's internal queue (~50-100ms).
+        while pendingWriter?.status == .writing {
+            Thread.sleep(forTimeInterval: 0.005)
+        }
+
+        // Complete inline. The queued writerQueue.async callback from
+        // rotateSegment will find pendingWriter == nil and no-op.
+        completePendingWriter()
+    }
+
+    // MARK: - Blocking finish (for flush and save)
+
+    private func finishCurrentSegmentBlocking() {
+        guard let writer = currentWriter else { return }
+        let url = currentSegmentURL
+
+        currentVideoInput?.markAsFinished()
+        currentAudioInput?.markAsFinished()
+
+        let semaphore = DispatchSemaphore(value: 0)
+        writer.finishWriting {
+            semaphore.signal()
+        }
+        semaphore.wait()
+
+        if writer.status == .completed, let url {
+            lock.lock()
+            segments.append(SegmentInfo(url: url, createdAt: Date()))
+            lock.unlock()
+        } else if let url {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        currentWriter = nil
+        currentVideoInput = nil
+        currentAudioInput = nil
+        currentSegmentURL = nil
+        currentSegmentStartTime = .invalid
+        hasStartedSession = false
+    }
+
     // MARK: - Private
 
     private func startNewSegment(at time: CMTime) {
@@ -216,6 +318,8 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
 
         do {
             let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+            // Fragmented MP4 — file is valid at any fragment boundary
+            writer.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 600)
 
             var videoSettings: [String: Any] = [
                 AVVideoCodecKey: AVVideoCodecType.h264
@@ -258,35 +362,6 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         }
     }
 
-    private func finishCurrentSegment() {
-        guard let writer = currentWriter else { return }
-        let url = currentSegmentURL
-
-        currentVideoInput?.markAsFinished()
-        currentAudioInput?.markAsFinished()
-
-        let semaphore = DispatchSemaphore(value: 0)
-        writer.finishWriting {
-            semaphore.signal()
-        }
-        semaphore.wait()
-
-        if writer.status == .completed, let url {
-            lock.lock()
-            segments.append(SegmentInfo(url: url, createdAt: Date()))
-            lock.unlock()
-        } else if let url {
-            try? FileManager.default.removeItem(at: url)
-        }
-
-        currentWriter = nil
-        currentVideoInput = nil
-        currentAudioInput = nil
-        currentSegmentURL = nil
-        currentSegmentStartTime = .invalid
-        hasStartedSession = false
-    }
-
     private func deleteAllSegmentFiles() {
         lock.lock()
         for segment in segments {
@@ -294,6 +369,14 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
         }
         segments.removeAll()
         lock.unlock()
+
+        // Also clean up any pending writer file
+        if let url = pendingURL {
+            pendingWriter?.cancelWriting()
+            try? FileManager.default.removeItem(at: url)
+            pendingWriter = nil
+            pendingURL = nil
+        }
     }
 
     private func pruneOldSegments() {
