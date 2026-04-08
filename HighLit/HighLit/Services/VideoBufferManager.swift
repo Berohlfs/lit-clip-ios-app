@@ -322,7 +322,10 @@ nonisolated final class VideoBufferManager: @unchecked Sendable {
             writer.movieFragmentInterval = CMTime(seconds: 1, preferredTimescale: 600)
 
             var videoSettings: [String: Any] = [
-                AVVideoCodecKey: AVVideoCodecType.h264
+                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoCompressionPropertiesKey: [
+                    AVVideoAverageBitRateKey: 6_000_000
+                ]
             ]
             if let fmt = videoFormatDescription {
                 let dimensions = CMVideoFormatDescriptionGetDimensions(fmt)
