@@ -1,2 +1,2 @@
-# high-lit-app
+# LitClip
 Mobile app for capturing sports highlights.

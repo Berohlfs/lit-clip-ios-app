@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Project
-HighLit is an iOS app for capturing sports highlights instantly. Built with Swift 6 and SwiftUI.
+LitClip is an iOS app for capturing sports highlights instantly. Built with Swift 6 and SwiftUI.
 
 ## Core idea
 The app continuously records video and keeps the last 30 seconds in a rolling buffer on disk. When the user taps save, the buffer is exported to the Camera Roll in ~1 second.

@@ -7,7 +7,7 @@
 
 ## Context
 
-HighLit needs to continuously capture video and allow users to save the last 30 seconds at any moment. This requires a "rolling buffer" — a fixed-size window of video that advances in real time, discarding old content as new content arrives.
+LitClip needs to continuously capture video and allow users to save the last 30 seconds at any moment. This requires a "rolling buffer" — a fixed-size window of video that advances in real time, discarding old content as new content arrives.
 
 The core constraint: the buffer must be always-available, zero-friction, and work reliably for extended sessions (3+ hours) without crashing the phone or filling storage.
 

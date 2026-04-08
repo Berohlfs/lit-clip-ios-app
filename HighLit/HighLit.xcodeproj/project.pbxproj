@@ -256,6 +256,7 @@
 				DEVELOPMENT_TEAM = 26D4VQ556Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LitClip;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HighLit needs camera access to record sports highlights.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HighLit needs microphone access to capture audio with your highlights.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "HighLit saves your highlights to your Camera Roll.";
@@ -291,6 +292,7 @@
 				DEVELOPMENT_TEAM = 26D4VQ556Z;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = LitClip;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HighLit needs camera access to record sports highlights.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HighLit needs microphone access to capture audio with your highlights.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "HighLit saves your highlights to your Camera Roll.";
