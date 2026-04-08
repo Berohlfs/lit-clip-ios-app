@@ -109,11 +109,13 @@ final class RecordingViewModel {
                     self.showSaveConfirmation = true
                     self.state = .recording
                     dismissConfirmationAfterDelay()
+                    WatchConnectivityService.shared.sendResult(success: true)
                 }
             } catch {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
                     self.state = .recording
+                    WatchConnectivityService.shared.sendResult(success: false)
                 }
             }
         }

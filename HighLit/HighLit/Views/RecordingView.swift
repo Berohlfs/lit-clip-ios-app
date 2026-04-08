@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RecordingView: View {
 
-    @State private var viewModel = RecordingViewModel()
+    var viewModel: RecordingViewModel
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -236,5 +236,5 @@ struct RecordingView: View {
 }
 
 #Preview {
-    RecordingView()
+    RecordingView(viewModel: RecordingViewModel())
 }

@@ -1,17 +1,22 @@
-//
-//  HighLitApp.swift
-//  HighLit
-//
-//  Created by Bernardo Cruz Rohlfs on 07/04/26.
-//
-
 import SwiftUI
 
 @main
 struct HighLitApp: App {
+
+    @State private var viewModel = RecordingViewModel()
+
+    init() {
+        WatchConnectivityService.shared.activate()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RecordingView(viewModel: viewModel)
+                .onAppear {
+                    WatchConnectivityService.shared.onSaveRequested = { [viewModel] in
+                        viewModel.saveHighlight()
+                    }
+                }
         }
     }
 }
