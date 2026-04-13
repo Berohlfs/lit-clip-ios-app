@@ -67,7 +67,3 @@ HighLit/
 3. Select a device or simulator and run
 
 Requires camera access. Best tested on a physical device.
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
