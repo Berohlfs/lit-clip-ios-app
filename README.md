@@ -1,6 +1,6 @@
 # LitClip
 
-Capture sports highlights instantly. Tap once, save the last 30 seconds to your Camera Roll.
+Capture sports highlights instantly. Tap once, save the last 30 seconds to your Camera Roll!
 
 ## How it works
 
